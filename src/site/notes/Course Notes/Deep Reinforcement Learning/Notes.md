@@ -223,7 +223,7 @@ $$\nabla _ {\theta'} J(\theta') = E_{\tau\sim p_\theta(\tau)}{\left[\sum_{t=1}^T
 - problems
     - unstable
         - large step -> bad policy, bad data
-        - small step -> too slow
+            - small step -> too slow
 ##### DDPG
 - learn $\mu_\theta$ (action) to deal with continuous action space
 ##### TD3
@@ -246,17 +246,23 @@ $$\mathrm{maximize}\quad\hat{\mathbb{E}}_t{\left[\frac{\pi_\theta (a_t\mid s_t)}
 ### Model-based RL
 > when we know or can simulate the environment
 > know $T (s, a, s')$
+>
+> $\min _{x, u} \sum_{t=1}
+{ #T}
+ c_t(x_t,u_t)$ where $x_{t+1}=f (x_t, u_t)$, $u$ denotes action
+
+#### model is known (trajectory optimization)
 - open-loop: not using future feedbacks, 在开始前决定好 action 序列
 - closed-loop: 每一步根据这一步转移的结果，决定下一步的 action（only in Stochastic scenarios）
-#### open-loop planning
+##### open-loop planning
 - $f (s, a)=s'$，deterministic world
 $$
 \mathbf{a}_1,\ldots,\mathbf{a}_T=\arg\max_{\mathbf{a}_1,\ldots,\mathbf{a}_T}\sum_{t=1}^Tr(\mathbf{s}_t,\mathbf{a}_t)\mathrm{~s.t.~}\mathbf{s}_{t+1}=f(\mathbf{s}_t,\mathbf{a}_t)
 $$
-##### random shooting
+###### random shooting
 - guess $\{a_i\}$, check the reward
 - find the best one
-##### cross-entropy method
+###### cross-entropy method
 - 用参数 $w$ 控制选择 action 的 策略
 - 例如：状态是一个 向量 $S$，我们用一个向量 $w$ 表示我们的 policy，根据 $S\cdot w$ 的结果选择做哪一个 action
 - 我们控制用来 sample $w$ 的参数，例如方差均值等
@@ -266,11 +272,33 @@ $$
     - 只能做 open-loop
         - 无法应对扰动
         - 无法根据反馈调整策略
-#### closed-loop control
+##### closed-loop control
+
 ##### MCTS
 - 根据当前策略找到最优的叶子结点，并且通过随机模拟扩展
 - Go
+##### Quadratic Programming
+- cost function is quadratic, dynamics is linear
+![file-20250310100651213.png|625](/img/user/Course%20Notes/Deep%20Reinforcement%20Learning/Notes/file-20250310100651213.png)
 ##### Linear Quadratic Regulator
+![file-20250310102224487.png|625](/img/user/Course%20Notes/Deep%20Reinforcement%20Learning/Notes/file-20250310102224487.png)
+- 与 QP 的区别：没有 $D_t$ 的限制
+###### simpler case
+- no cross term ($N_t=0$) and no bias ($l_t = g_t = 0$)
+- the problem becomes
+$$
+\min_{x,u}\sum_{t=1}^T\frac{1}{2}x_t^\top Q_tx_t+\frac{1}{2}u_t^\top R_tu_t\quad \mathrm{s.t.}\quad x_{t+1}=A_tx_t+B_tu_t,\forall t\in[1,T-1]
+$$
+- solution
+> 事实上 $V_t$ 也是 quadratic $V_t (x_t) = \frac 1 2 x_t^T P_t x_t$ 容易倒着归纳证明
+> 又有 $P_T = Q_T$，然后倒推每一步的 $P_t$ 和 $u_t$
+- if $T \rightarrow \infty$
+    - solve $P$ from DARE (discrete-time algebraic Riccati equation)
+    - 类似于不动点
+###### general case
+- just change the format of $V_t$
+- $V_t (x_t)=\frac{1}{2}x_t^\top P_tx_t+x_t^\top r_t+q_t$
+
 - 解决线性问题
 - $s_{t+1} = As_t + Ba_t$
 - $cost(s_t, u_t) = s_t^TQ s_t + u_t ^ T R u_t$
@@ -278,6 +306,7 @@ $$
 - 用类似 value iteration 的方式，每次更新应该用的 action 都可以直接计算出来
     - 快，closed-loop
     - 但是不能解决非线性问题，并且无法应对环境扰动
+![[file-20250310104527150.png \| 625]]
 #### model is unknown
 - easiest algorithm
     - use random policy to explore, collect data $(s, a, s')$
@@ -287,6 +316,9 @@ $$
 - improve
     - 在 plan 的时候，把新获得的数据加入 dataset，用于训练 $f$
 ##### MPC
+![file-20250310095924087.png|625](/img/user/Course%20Notes/Deep%20Reinforcement%20Learning/Notes/file-20250310095924087.png)
+- 每次计算 H 步但只用第一步的结果
+
 - change to closed-loop
 ![Pasted image 20240423231757.png|750](/img/user/Course%20Notes/Deep%20Reinforcement%20Learning/assets/Pasted%20image%2020240423231757.png)
 - 由于每次把 $(s, a, s')$ 放进了 dataset，我们的 environment 就知道了 $f (s, a)=s'$，那么在 plan 的时候就可以用这个信息
